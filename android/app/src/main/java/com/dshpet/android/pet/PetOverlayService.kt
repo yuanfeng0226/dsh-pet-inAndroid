@@ -516,6 +516,11 @@ open class PetOverlayService : Service() {
 
     /** 六态 → 动画/气泡（上游 agent_link_presentation 同款映射） */
     private fun onAgentState(agent: String, state: String) {
+        if (state.startsWith("scene|")) {
+            val parts = state.split("|")
+            handleScene(agent, parts.getOrElse(1) { "" }, parts.getOrElse(2) { "" })
+            return
+        }
         AppLog.log("PLUGIN", "Agent[$agent] 状态: $state")
         when (state) {
             "thinking", "working" -> {
@@ -529,6 +534,28 @@ open class PetOverlayService : Service() {
             "attention" -> showBubble("主人，Agent（$agent）这边需要你看一眼～", 6000)
             "error" -> showBubble("Agent（$agent）执行好像遇到报错了…", 6000)
             "idle", "sleeping" -> engine.switchToIdle()
+        }
+    }
+
+    /** 场景联动：优先播对应动画；没有合适动画就只弹大图。 */
+    private fun handleScene(agent: String, scene: String, image: String) {
+        AppLog.log("PLUGIN", "Agent[$agent] 场景: $scene image=$image")
+        val pool = when (scene) {
+            "sleep" -> listOf("睡觉-循环", "睡觉-开始", "深度睡眠", "打瞌睡被惊醒")
+            "eat" -> listOf("吃白饭", "吃饭·碗饭", "吃午餐", "吃晚餐")
+            "tv" -> listOf("东张西望")
+            "phone" -> listOf("东张西望")
+            "computer" -> listOf("写代码", "原地敲击桌面互动")
+            else -> emptyList()
+        }
+        val anim = pool.firstOrNull { engine.hasAnim(it) }
+        if (anim != null) engine.switch(anim) else engine.switchToIdle()
+        if (image.isNotBlank()) {
+            try {
+                EasterEggPopup.showNamed(this, image)?.let { easterEggs.add(it) }
+            } catch (e: Throwable) {
+                AppLog.log("PLUGIN", "场景大图失败: ${e.message}")
+            }
         }
     }
 
