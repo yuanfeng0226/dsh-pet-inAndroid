@@ -277,6 +277,12 @@ class AgentEventBus(
             val raw = line.trimStart().removePrefix("\uFEFF")
             val obj = JSONObject(raw)
             val agent = obj.optString("agent", "agent")
+            val scene = obj.optString("scene", "").trim()
+            if (scene.isNotEmpty()) {
+                // scene|<场景>|<大图文件名>
+                onState(agent, "scene|" + scene + "|" + obj.optString("image", "").trim())
+                return
+            }
             val state = obj.optString("state", "").ifEmpty {
                 val ev = obj.optString("event", "")
                 EVENT_MAP[ev] ?: return
