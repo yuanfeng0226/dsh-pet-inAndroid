@@ -88,6 +88,20 @@ class EasterEggPopup private constructor(
             }
         }
 
+        /** 按文件名显示指定彩蛋大图（场景联动用）。 */
+        fun showNamed(ctx: Context, imageName: String): EasterEggPopup? {
+            return try {
+                if (!availableImages(ctx).contains(imageName)) {
+                    com.dshpet.android.util.AppLog.log("EASTER", "彩蛋图不存在: $imageName")
+                    return null
+                }
+                EasterEggPopup(ctx, imageName).also { it.show() }
+            } catch (e: Throwable) {
+                com.dshpet.android.util.AppLog.log("EASTER", "指定彩蛋显示失败: ${e.message}")
+                null
+            }
+        }
+
         fun showRandom(ctx: Context) {
             // 彩蛋是装饰功能：任何异常都只记日志，绝不带崩进程
             try {
