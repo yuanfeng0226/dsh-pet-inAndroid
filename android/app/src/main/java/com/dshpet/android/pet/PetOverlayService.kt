@@ -135,6 +135,7 @@ open class PetOverlayService : Service() {
     private var bubble: SpeechBubble? = null
     private var menuWindow: PetMenu? = null
     private var easterEggs = mutableListOf<EasterEggPopup>()
+    private var scenePopup: EasterEggPopup? = null
 
     private lateinit var engine: PetEngine
     private lateinit var catalog: PetCatalog
@@ -552,7 +553,19 @@ open class PetOverlayService : Service() {
         if (anim != null) engine.switch(anim) else engine.switchToIdle()
         if (image.isNotBlank()) {
             try {
-                EasterEggPopup.showNamed(this, image)?.let { easterEggs.add(it) }
+                // 同一时间只留一张场景大图，12 秒后自动收起，避免越堆越多
+                scenePopup?.dismiss()
+                scenePopup = null
+                val p = EasterEggPopup.showNamed(this, image)
+                if (p != null) {
+                    scenePopup = p
+                    easterEggs.add(p)
+                    uiHandler.postDelayed({
+                        p.dismiss()
+                        easterEggs.remove(p)
+                        if (scenePopup === p) scenePopup = null
+                    }, 12_000)
+                }
             } catch (e: Throwable) {
                 AppLog.log("PLUGIN", "场景大图失败: ${e.message}")
             }
